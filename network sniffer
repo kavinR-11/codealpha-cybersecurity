@@ -1,0 +1,37 @@
+from scapy.all import *
+from scapy.layers.inet import IP, TCP, UDP
+
+def packet_callback(packet):
+    if packet.haslayer(IP):
+        ip_src = packet[IP].src
+        ip_dst = packet[IP].dst
+        proto = packet[IP].proto
+        print(f"\n[IP Packet] {ip_src} -> {ip_dst}")
+        print(f"  Protocol: {proto} ({get_proto_name(proto)})")
+        print(f"  TTL: {packet[IP].ttl}")
+        
+        if packet.haslayer(TCP):
+            print(f"  [TCP] Sport: {packet[TCP].sport} -> Dport: {packet[TCP].dport}")
+            print(f"  Flags: {packet[TCP].flags}")
+        elif packet.haslayer(UDP):
+            print(f"  [UDP] Sport: {packet[UDP].sport} -> Dport: {packet[UDP].dport}")
+        
+        if packet.haslayer(Raw):
+            payload = packet[Raw].load
+            print(f"  Payload ({len(payload)} bytes): {payload[:100]}...")
+
+def get_proto_name(proto_num):
+    protocols = {1: "ICMP", 6: "TCP", 17: "UDP"}
+    return protocols.get(proto_num, "Unknown")
+
+def main():
+    parser = argparse.ArgumentParser(description="Network Packet Sniffer")
+    parser.add_argument("-i", "--interface", help="Network interface", default=None)
+    parser.add_argument("-c", "--count", help="Packet count", type=int, default=0)
+    args = parser.parse_args()
+    
+    print(f"[+] Sniffing on {args.interface or 'default'}...")
+    sniff(iface=args.interface, prn=packet_callback, count=args.count, store=0)
+
+if __name__ == "__main__":
+    main()
